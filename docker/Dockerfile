@@ -7,7 +7,7 @@
 # anti-pattern (volume reset = lost packages, no version pinning, no audit).
 
 ARG UPSTREAM_TAG=latest
-FROM ghcr.io/nousresearch/hermes-agent:${UPSTREAM_TAG}
+FROM nousresearch/hermes-agent:${UPSTREAM_TAG}
 
 USER root
 
