@@ -38,7 +38,7 @@ sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd
 systemctl restart ssh
 
 echo "==> Firewall + fail2ban"
-apt install -y ufw fail2ban curl
+apt install -y ufw fail2ban curl git
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow 22/tcp
