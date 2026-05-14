@@ -12,12 +12,21 @@ FROM nousresearch/hermes-agent:${UPSTREAM_TAG}
 USER root
 
 # CEELIS-MCP-Server + Claude Code CLI (global install, baked into image-layer)
-# Claude Code wird von Atlas via skill `claude-code` aufgerufen (Print Mode `claude -p ...`),
-# Auth läuft über ANTHROPIC_API_KEY-ENV automatisch (kein OAuth-Browser-Flow nötig).
+# Claude Code wird von Atlas via skill `claude-code` aufgerufen (Print Mode `claude -p ...`).
+# Auth läuft über Subscription (`docker exec -it hermes claude login` einmalig).
+#
+# chown auf hermes-User (UID 10000) — bekanntes Hermes-Verhalten (Issue #18800):
+# hermes' TUI-Launcher + MCP-Subprocess-Startup macht `npm install` bei jedem
+# Container-Start als Update-Check. Ohne write-perms scheitert das mit EACCES
+# (Log-Noise, aber funktional unkritisch). chown behebt das.
 RUN npm install -g \
       @k-jarzyna/mcp-miro \
       @anthropic-ai/claude-code \
-    && npm cache clean --force
+    && npm cache clean --force \
+    && chown -R 10000:10000 \
+         /usr/local/lib/node_modules/@k-jarzyna \
+         /usr/local/lib/node_modules/@anthropic-ai \
+         /usr/local/lib/node_modules/.package-lock.json 2>/dev/null || true
 
 # CEELIS-init.sh: injects MCP configs from env into /opt/data/config.yaml on
 # every container start (idempotent). Overrides upstream version.
