@@ -15,15 +15,17 @@ USER root
 # Claude Code wird von Atlas via skill `claude-code` aufgerufen (Print Mode `claude -p ...`).
 # Auth läuft über Subscription (`docker exec -it hermes claude login` einmalig).
 #
-# chown auf hermes-User (UID 10000) — bekanntes Hermes-Verhalten (Issue #18800):
-# hermes' TUI-Launcher + MCP-Subprocess-Startup macht `npm install` bei jedem
-# Container-Start als Update-Check. Ohne write-perms scheitert das mit EACCES
-# (Log-Noise, aber funktional unkritisch). chown behebt das.
+# Note: hermes' MCP-Subprocess-Startup triggert `npm install --global` als
+# Update-Check für globally installierte Packages. Das scheitert mit EACCES weil
+# der Container als unprivileged hermes-User (UID 10000) auf root-owned npm-paths
+# läuft (~36 Log-Zeilen pro Start). Funktional unkritisch — MCP startet trotzdem
+# über den bereits installierten Pfad. KEIN chown-Workaround hier, damit das
+# Custom-Image minimal-divergent zu upstream bleibt. Upstream-Issue siehe
+# nousresearch/hermes-agent#18800.
 RUN npm install -g \
       @k-jarzyna/mcp-miro \
       @anthropic-ai/claude-code \
-    && npm cache clean --force \
-    && chown -R 10000:10000 /usr/local/lib/node_modules /usr/local/bin/mcp-miro /usr/local/bin/claude 2>/dev/null || true
+    && npm cache clean --force
 
 # CEELIS-init.sh: injects MCP configs from env into /opt/data/config.yaml on
 # every container start (idempotent). Overrides upstream version.
