@@ -95,8 +95,11 @@ else:
 if os.environ.get("MIRO_ACCESS_TOKEN"):
     config.setdefault("mcp_servers", {})
     config["mcp_servers"]["miro"] = {
-        "command": "npx",
-        "args": ["-y", "@k-jarzyna/mcp-miro"],
+        # Direkter Node-Pfad statt `npx -y` — npx versucht beim Start in den
+        # globalen node_modules zu schreiben (Update-Check), was als hermes-User
+        # (UID 10000) auf einem root-installierten Image-Layer fehlschlägt.
+        "command": "node",
+        "args": ["/usr/local/lib/node_modules/@k-jarzyna/mcp-miro/build/index.js"],
         "env": {"MIRO_ACCESS_TOKEN": os.environ["MIRO_ACCESS_TOKEN"]},
         "enabled": True,
     }
