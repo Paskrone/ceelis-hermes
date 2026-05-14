@@ -126,5 +126,21 @@ path.write_text(yaml.safe_dump(config, sort_keys=False, default_flow_style=False
 print(f"[ceelis-init] config.yaml updated at {path}: {', '.join(changes) if changes else 'no changes'}")
 PYEOF
 
+# Dashboard NACH config.yaml-Inject backgrounden (statt durch upstream entrypoint.sh
+# VOR init.sh) — sonst liest das Dashboard die bootstrap-config.yaml mit `command: npx`
+# und triggert `npm install`, scheitert mangels Schreibrechten.
+# Voraussetzung: HERMES_DASHBOARD=0 in env_file (upstream entrypoint.sh überspringt dann).
+case "${CEELIS_DASHBOARD:-1}" in
+    1|true|TRUE|True|yes|YES|Yes)
+        dash_host="${CEELIS_DASHBOARD_HOST:-0.0.0.0}"
+        dash_port="${CEELIS_DASHBOARD_PORT:-9119}"
+        echo "[ceelis-init] starting hermes dashboard on ${dash_host}:${dash_port} (background)"
+        (
+            stdbuf -oL -eL hermes dashboard --host "$dash_host" --port "$dash_port" --no-open --insecure 2>&1 \
+                | sed -u 's/^/[dashboard] /'
+        ) &
+        ;;
+esac
+
 # Final: execute hermes with the args we were called with
 exec hermes "$@"
