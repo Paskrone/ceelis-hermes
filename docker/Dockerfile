@@ -11,9 +11,12 @@ FROM nousresearch/hermes-agent:${UPSTREAM_TAG}
 
 USER root
 
-# CEELIS-MCP-Server (global install, baked into image-layer)
+# CEELIS-MCP-Server + Claude Code CLI (global install, baked into image-layer)
+# Claude Code wird von Atlas via skill `claude-code` aufgerufen (Print Mode `claude -p ...`),
+# Auth läuft über ANTHROPIC_API_KEY-ENV automatisch (kein OAuth-Browser-Flow nötig).
 RUN npm install -g \
       @k-jarzyna/mcp-miro \
+      @anthropic-ai/claude-code \
     && npm cache clean --force
 
 # CEELIS-init.sh: injects MCP configs from env into /opt/data/config.yaml on
