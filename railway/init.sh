@@ -21,6 +21,15 @@ set -e
 
 HERMES_HOME="${HERMES_HOME:-/opt/data}"
 
+# Claude-Code-Subscription-Credentials für Atlas-Subprocesses erreichbar machen.
+# Upstream entrypoint.sh setzt für Atlas' Subprocesses HOME=/opt/data/home (per-profile
+# HOME, damit git/ssh/npm in persistentes Volume schreiben statt nach /root). Claude-Code
+# sucht aber Credentials in $HOME/.claude/.credentials.json — der `docker exec claude login`
+# hat sie nach /opt/data/.claude/.credentials.json gelegt (default-HOME beim exec). Ohne
+# Symlink würde Atlas im Subprocess "Not logged in" sehen.
+mkdir -p "$HERMES_HOME/home/.claude"
+ln -sfn "$HERMES_HOME/.claude/.credentials.json" "$HERMES_HOME/home/.claude/.credentials.json"
+
 python3 <<PYEOF
 import os, yaml
 from pathlib import Path
