@@ -27,8 +27,22 @@ HERMES_HOME="${HERMES_HOME:-/opt/data}"
 # sucht aber Credentials in $HOME/.claude/.credentials.json — der `docker exec claude login`
 # hat sie nach /opt/data/.claude/.credentials.json gelegt (default-HOME beim exec). Ohne
 # Symlink würde Atlas im Subprocess "Not logged in" sehen.
-mkdir -p "$HERMES_HOME/home/.claude"
+mkdir -p "$HERMES_HOME/home/.claude" "$HERMES_HOME/.claude"
 ln -sfn "$HERMES_HOME/.claude/.credentials.json" "$HERMES_HOME/home/.claude/.credentials.json"
+
+# Claude-Code-Settings pinnen (Opus 4.7 als Default-Model, sonst wäre Atlas
+# anfällig wenn Anthropic die Plan-Defaults später ändert). Idempotent —
+# überschreibt nur wenn nicht da oder veraltet.
+if [ ! -f "$HERMES_HOME/.claude/settings.json" ] || \
+   ! grep -q '"model".*claude-opus-4-7' "$HERMES_HOME/.claude/settings.json" 2>/dev/null; then
+    cat > "$HERMES_HOME/.claude/settings.json" <<'CLAUDE_SETTINGS'
+{
+  "theme": "dark",
+  "model": "claude-opus-4-7"
+}
+CLAUDE_SETTINGS
+fi
+ln -sfn "$HERMES_HOME/.claude/settings.json" "$HERMES_HOME/home/.claude/settings.json"
 
 python3 <<PYEOF
 import os, yaml
