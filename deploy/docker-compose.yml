@@ -1,0 +1,33 @@
+# Deploy auf Hetzner-VPS (/srv/hermes/docker-compose.yml).
+# Vorausgesetzte Verzeichnisse:
+#   /srv/hermes/.env         (chmod 600, root:root — Tokens + ENVs)
+#   /srv/hermes/data/        (Volume-Inhalt aus Railway, ohne mcp-miro/ und ohne mcp-Pakete)
+# Voraussetzung: `docker network create web` (vom caddy-stack mit angelegt).
+
+services:
+  hermes:
+    image: ghcr.io/paskrone/ceelis-hermes:latest
+    container_name: hermes
+    restart: unless-stopped
+    pull_policy: always   # holt sich :latest nach `docker compose pull`
+    env_file: .env
+    volumes:
+      - ./data:/opt/data
+      # Docker-Socket: erlaubt Atlas Sub-Container zu spawnen (sandbox-execution)
+      # Sicherheits-Implikation: Container hat damit root-equivalent auf Host.
+      # OK weil VPS dedicated für Atlas; bei Multi-Tenant-Setup wäre rootless-podman/sysbox besser.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [web]
+    # Eintrittspunkt analog Railway (entrypoint.sh wrapped init.sh wrapped hermes)
+    command: ["bash", "-c", "/opt/hermes/railway/init.sh gateway run"]
+    # Healthcheck damit Docker bei /restart-Bug oder Crash automatisch redeployed
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9119/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+networks:
+  web:
+    external: true

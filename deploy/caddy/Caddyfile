@@ -1,0 +1,14 @@
+{
+    email ceelisagency@gmail.com
+}
+
+hermes.ceelis.com {
+    reverse_proxy hermes:9119
+    encode zstd gzip
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+}

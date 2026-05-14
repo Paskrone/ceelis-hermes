@@ -1,0 +1,26 @@
+# Caddy Reverse Proxy mit Auto-HTTPS (/srv/caddy/docker-compose.yml).
+# Cloudflare DNS muss A-Record auf VPS-IP zeigen, Proxy DEAKTIVIERT (graue Wolke),
+# sonst frisst Cloudflare die HTTP-01-Challenge von Let's Encrypt.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [web]
+
+networks:
+  web:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:
