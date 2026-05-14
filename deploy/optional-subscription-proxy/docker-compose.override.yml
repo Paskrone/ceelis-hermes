@@ -1,0 +1,53 @@
+# OPT-IN: Atlas → Anthropic-Subscription via Sidecar-Proxy
+#
+# Aktivierung: dieses File neben /srv/hermes/docker-compose.yml legen,
+# Docker liest beide automatisch zusammen. Siehe README.md im selben Folder.
+#
+# WARNUNG: ToS-Grauzone. Anthropic kann das Pattern als Subscription-Missbrauch
+# werten → Account-Sperre-Risiko. Nicht für Production-Workloads.
+
+services:
+  ccr:
+    # Image-Pin auf konkreten Commit empfohlen, "latest" kann brechen.
+    # Aktueller stabiler Stand zum Doku-Zeitpunkt: musistudio/claude-code-router
+    # Falls kein offizielles Docker-Image existiert, von Sources builden:
+    #   git clone https://github.com/musistudio/claude-code-router
+    #   docker build -t ccr-local .
+    # und hier image: ccr-local:latest
+    image: ghcr.io/musistudio/claude-code-router:latest
+    container_name: ccr
+    restart: unless-stopped
+    volumes:
+      # Pascals Subscription-OAuth-Token read-only mount.
+      # CCR liest beim Start den Refresh-Token, hält den Access-Token am Leben.
+      - ./data/.claude/.credentials.json:/root/.claude/.credentials.json:ro
+    environment:
+      # CCR-spezifische config (siehe Upstream-Docs)
+      - PORT=8080
+      # Optional: Logging-Level für Debugging
+      - LOG_LEVEL=info
+    networks: [web]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/v1/models"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Hermes-Service-Override: zeigt jetzt auf CCR statt OpenRouter
+  hermes:
+    depends_on:
+      ccr:
+        condition: service_healthy
+    environment:
+      # Atlas verwendet jetzt OpenAI-Format-API (von CCR emuliert) statt OpenRouter
+      - OPENAI_BASE_URL=http://ccr:8080/v1
+      - OPENAI_API_KEY=dummy-not-used-but-required-by-format
+      # Optional: HERMES_DEFAULT_MODEL auf Anthropic-ID umstellen
+      - HERMES_DEFAULT_MODEL=claude-sonnet-4-6
+      - HERMES_DELEGATION_MODEL=claude-haiku-4-5
+
+# Networks-Block muss existieren damit override sauber mergt
+networks:
+  web:
+    external: true
