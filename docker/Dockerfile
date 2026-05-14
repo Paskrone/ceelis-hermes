@@ -23,10 +23,7 @@ RUN npm install -g \
       @k-jarzyna/mcp-miro \
       @anthropic-ai/claude-code \
     && npm cache clean --force \
-    && chown -R 10000:10000 \
-         /usr/local/lib/node_modules/@k-jarzyna \
-         /usr/local/lib/node_modules/@anthropic-ai \
-         /usr/local/lib/node_modules/.package-lock.json 2>/dev/null || true
+    && chown -R 10000:10000 /usr/local/lib/node_modules /usr/local/bin/mcp-miro /usr/local/bin/claude 2>/dev/null || true
 
 # CEELIS-init.sh: injects MCP configs from env into /opt/data/config.yaml on
 # every container start (idempotent). Overrides upstream version.
